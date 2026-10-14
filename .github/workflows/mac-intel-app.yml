@@ -1,0 +1,32 @@
+name: Intel Mac desktop preview
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/mac-intel-app.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . "pyinstaller>=6,<7"
+      - name: Build application
+        run: |
+          python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt desktop/app.py
+      - name: Package unsigned DMG
+        run: |
+          hdiutil create -volname "MVT Forensic Suite" -srcfolder "dist/MVT Forensic Suite.app" -ov -format UDZO MVT-Forensic-Suite-Intel.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MVT-Forensic-Suite-Intel-unsigned
+          path: MVT-Forensic-Suite-Intel.dmg
+          if-no-files-found: error
