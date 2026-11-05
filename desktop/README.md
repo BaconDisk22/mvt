@@ -1,5 +1,5 @@
 # MVT Forensic Suite — experimental Intel macOS preview
 
-The desktop preview now includes a dark-themed tabbed interface with **iPhone Analysis** and **Investigations**. You can create and list local investigation metadata in the GUI. Cases store names, timestamps, and identifiers only; scans are not yet linked to cases and no evidence is copied into the case store.
+The GUI currently provides a dark workspace with iPhone Analysis and local Investigations. The `history.py` module adds minimal private scan metadata storage for status, timestamp, and optional case ID; **history is not yet wired to the GUI or scan worker**. It deliberately stores no evidence contents, backup paths, or scan logs.
 
-The iPhone backup scanner is experimental. Android analysis, timelines, scan history, findings, and reports are not yet implemented. GitHub Actions builds an unsigned, unnotarized Intel macOS DMG. CI success does not replace real Intel Mac launch and forensic validation. Only investigate data you own or have explicit authorization to analyze. No findings does not prove a device is clean. Upstream MVT licensing and attribution apply.
+The app is unsigned and unnotarized. Android analysis, case-linked scans, findings, timelines, and reports are not yet implemented. CI builds and smoke tests do not replace actual Intel Mac launch and forensic validation. Analyze only data you own or are authorized to investigate. A scan with no findings does not establish a device is clean. Upstream MVT licensing and attribution apply.
