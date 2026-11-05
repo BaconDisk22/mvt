@@ -7,8 +7,10 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 
 try:
     from desktop.cases import create_case, list_cases
+    from desktop.history import list_scans, save_scan
 except ModuleNotFoundError:
     from cases import create_case, list_cases
+    from history import list_scans, save_scan
 
 
 def scan_command(executable, backup, output):
@@ -47,6 +49,23 @@ def main():
     cases_tab = ttk.Frame(tabs, padding=16)
     tabs.add(scan_tab, text="iPhone Analysis")
     tabs.add(cases_tab, text="Investigations")
+    history_tab = ttk.Frame(tabs, padding=16)
+    tabs.add(history_tab, text="Scan History")
+    ttk.Label(history_tab, text="LOCAL SCAN OUTCOMES").pack(anchor="w")
+    ttk.Label(history_tab, text="Execution status only; not a finding or clean-device verdict.").pack(anchor="w")
+    history_list = tk.Listbox(history_tab, bg="#1f2937", fg="#f9fafb", height=15)
+    history_list.pack(fill="both", expand=True, pady=12)
+
+    def refresh_history():
+        history_list.delete(0, "end")
+        try:
+            for record in list_scans():
+                history_list.insert("end", record["created_at"][:19] + "  ·  " + record["status"])
+        except OSError as exc:
+            messagebox.showerror("Cannot load history", str(exc))
+
+    ttk.Button(history_tab, text="Refresh history", command=refresh_history).pack(anchor="w")
+    refresh_history()
     case_name = tk.StringVar()
     ttk.Label(cases_tab, text="LOCAL INVESTIGATIONS").pack(anchor="w")
     ttk.Label(cases_tab, text="Case metadata stays on this Mac; no evidence files are copied.").pack(anchor="w", pady=(4, 12))
@@ -88,7 +107,12 @@ def main():
     log.pack(fill="both", expand=True)
     log.insert("end", "No findings does not mean a device is clean.\n")
 
-    def finish(message):
+    def finish(message, status):
+        try:
+            save_scan(status)
+            refresh_history()
+        except OSError as exc:
+            message += f"\nWarning: scan history was not saved: {exc}\n"
         log.insert("end", message)
         log.see("end")
         run_button.configure(state="normal")
@@ -103,9 +127,14 @@ def main():
             try:
                 result = subprocess.run(scan_command(sys.executable, backup.get(), output.get()), capture_output=True, text=True, timeout=3600)
                 message = result.stdout + "\n" + result.stderr + f"\nExit status: {result.returncode}\n"
+                status = "completed" if result.returncode == 0 else "failed"
+            except subprocess.TimeoutExpired:
+                message = "Analysis timed out after one hour.\n"
+                status = "timed_out"
             except Exception as exc:
                 message = f"Analysis failed: {exc}\n"
-            root.after(0, finish, message)
+                status = "failed"
+            root.after(0, finish, message, status)
 
         threading.Thread(target=worker, daemon=True).start()
 
