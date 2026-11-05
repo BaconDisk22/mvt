@@ -30,3 +30,23 @@ def test_reject_symlinks(tmp_path):
 def test_reject_bad_digest(tmp_path):
     with pytest.raises(ValueError):
         integrity.verify_sha256(tmp_path / "none", "not-a-digest")
+
+
+
+def test_manifest_is_deterministic_and_read_only(tmp_path):
+    first = tmp_path / "a.bin"
+    second = tmp_path / "b.bin"
+    first.write_bytes(b"a")
+    second.write_bytes(b"bb")
+    result = integrity.sha256_manifest([second, first])
+    assert [item["file"] for item in result] == ["a.bin", "b.bin"]
+    assert [item["size_bytes"] for item in result] == [1, 2]
+    assert len(result[0]["sha256"]) == 64
+    assert len(list(tmp_path.iterdir())) == 2
+
+
+def test_manifest_rejects_duplicates(tmp_path):
+    path = tmp_path / "evidence"
+    path.write_bytes(b"sample")
+    with pytest.raises(ValueError):
+        integrity.sha256_manifest([path, path])
