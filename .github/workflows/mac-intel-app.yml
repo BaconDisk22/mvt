@@ -20,10 +20,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install . "pyinstaller>=6,<7" pytest pytest-cov
       - name: Desktop worker smoke tests
-        run: python -m pytest desktop/test_app.py -q
+        run: python -m pytest desktop/test_app.py desktop/test_cases.py -q
       - name: Build application
         run: |
-          python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt desktop/app.py
+          python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt --paths . --hidden-import desktop.cases desktop/app.py
       - name: Packaged CLI smoke test
         run: |
           "dist/MVT Forensic Suite.app/Contents/MacOS/MVT Forensic Suite" --mvt-scan-worker --help
