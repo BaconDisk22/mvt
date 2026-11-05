@@ -82,7 +82,7 @@ def main():
 
     for title, var in (("Choose iPhone backup", backup), ("Choose results directory", output)):
         ttk.Button(scan_tab, text=title, command=lambda v=var: choose(v)).pack(anchor="w", pady=(14, 2))
-        ttk.Entry(scan_tab, textvariable=var.pack(fill="x")
+        ttk.Entry(scan_tab, textvariable=var).pack(fill="x")
     ttk.Checkbutton(scan_tab, text="I own this data or have explicit permission to analyze it", variable=consent).pack(anchor="w", pady=15)
     log = scrolledtext.ScrolledText(scan_tab, height=12)
     log.pack(fill="both", expand=True)
