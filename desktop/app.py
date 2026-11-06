@@ -60,23 +60,28 @@ def main():
         history_list.delete(0, "end")
         try:
             for record in list_scans():
-                history_list.insert("end", record["created_at"][:19] + "  ·  " + record["status"])
+                history_list.insert("end", record["created_at"][:19] + "  ·  " + record["status"] + ("  ·  Case " + record["case_id"][:8] if record.get("case_id") else ""))
         except OSError as exc:
             messagebox.showerror("Cannot load history", str(exc))
 
     ttk.Button(history_tab, text="Refresh history", command=refresh_history).pack(anchor="w")
     refresh_history()
     case_name = tk.StringVar()
+    active_case = tk.StringVar(value="No investigation selected")
+    case_records = []
+    ttk.Label(scan_tab, textvariable=active_case).pack(anchor="w")
     ttk.Label(cases_tab, text="LOCAL INVESTIGATIONS").pack(anchor="w")
     ttk.Label(cases_tab, text="Case metadata stays on this Mac; no evidence files are copied.").pack(anchor="w", pady=(4, 12))
     ttk.Entry(cases_tab, textvariable=case_name).pack(fill="x")
-    case_list = tk.Listbox(cases_tab, bg="#1f2937", fg="#f9fafb", selectbackground="#2563eb", relief="flat", height=12)
+    case_list = tk.Listbox(cases_tab, bg="#1f2937", fg="#f9fafb", selectbackground="#2563eb", relief="flat", height=12, exportselection=False)
     case_list.pack(fill="both", expand=True, pady=12)
 
     def refresh_cases():
+        case_records.clear()
         case_list.delete(0, "end")
         try:
             for record in list_cases():
+                case_records.append(record)
                 case_list.insert("end", record["name"] + "  ·  " + record["created_at"][:10])
         except OSError as exc:
             messagebox.showerror("Cannot read cases", str(exc))
@@ -90,6 +95,12 @@ def main():
         case_name.set("")
         refresh_cases()
 
+    def select_case(event=None):
+        selection = case_list.curselection()
+        if selection and selection[0] < len(case_records):
+            active_case.set("Investigation: " + case_records[selection[0]]["name"])
+
+    case_list.bind("<<ListboxSelect>>", select_case)
     ttk.Button(cases_tab, text="Create investigation", command=add_case).pack(anchor="w")
     ttk.Button(cases_tab, text="Refresh investigations", command=refresh_cases).pack(anchor="w", pady=8)
     refresh_cases()
@@ -107,9 +118,9 @@ def main():
     log.pack(fill="both", expand=True)
     log.insert("end", "No findings does not mean a device is clean.\n")
 
-    def finish(message, status):
+    def finish(message, status, case_id):
         try:
-            save_scan(status)
+            save_scan(status, case_id=case_id)
             refresh_history()
         except OSError as exc:
             message += f"\nWarning: scan history was not saved: {exc}\n"
@@ -121,6 +132,8 @@ def main():
         if not consent.get() or not backup.get() or not output.get():
             messagebox.showwarning("Authorization and folders required", "Confirm authorization and select both folders.")
             return
+        selection = case_list.curselection()
+        selected_case_id = case_records[selection[0]]["id"] if selection and selection[0] < len(case_records) else None
         run_button.configure(state="disabled")
 
         def worker():
@@ -134,7 +147,7 @@ def main():
             except Exception as exc:
                 message = f"Analysis failed: {exc}\n"
                 status = "failed"
-            root.after(0, finish, message, status)
+            root.after(0, finish, message, status, selected_case_id)
 
         threading.Thread(target=worker, daemon=True).start()
 
