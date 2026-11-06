@@ -73,7 +73,7 @@ def main():
     ttk.Label(cases_tab, text="LOCAL INVESTIGATIONS").pack(anchor="w")
     ttk.Label(cases_tab, text="Case metadata stays on this Mac; no evidence files are copied.").pack(anchor="w", pady=(4, 12))
     ttk.Entry(cases_tab, textvariable=case_name).pack(fill="x")
-    case_list = tk.Listbox(cases_tab, bg="#1f2937", fg="#f9fafb", selectbackground="#2563eb", relief="flat", height=12)
+    case_list = tk.Listbox(cases_tab, bg="#1f2937", fg="#f9fafb", selectbackground="#2563eb", relief="flat", height=12, exportselection=False)
     case_list.pack(fill="both", expand=True, pady=12)
 
     def refresh_cases():
