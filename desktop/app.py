@@ -8,9 +8,11 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 try:
     from desktop.cases import create_case, list_cases
     from desktop.history import list_scans, save_scan
+    from desktop.integrity import sha256_file, verify_sha256
 except ModuleNotFoundError:
     from cases import create_case, list_cases
     from history import list_scans, save_scan
+    from integrity import sha256_file, verify_sha256
 
 
 def scan_command(executable, backup, output):
@@ -66,6 +68,43 @@ def main():
 
     ttk.Button(history_tab, text="Refresh history", command=refresh_history).pack(anchor="w")
     refresh_history()
+    integrity_tab = ttk.Frame(tabs, padding=16)
+    tabs.add(integrity_tab, text="Evidence Integrity")
+    ttk.Label(integrity_tab, text="READ-ONLY EVIDENCE VERIFICATION").pack(anchor="w")
+    ttk.Label(integrity_tab, text="SHA-256 fingerprints do not establish chain of custody.").pack(anchor="w", pady=(4, 12))
+    evidence_path = tk.StringVar()
+    expected_digest = tk.StringVar()
+    actual_digest = tk.StringVar(value="Select a regular evidence file to calculate its SHA-256.")
+    def select_evidence():
+        selected = filedialog.askopenfilename(title="Select evidence file")
+        if selected:
+            evidence_path.set(selected)
+    ttk.Button(integrity_tab, text="Choose evidence file", command=select_evidence).pack(anchor="w")
+    ttk.Entry(integrity_tab, textvariable=evidence_path, state="readonly").pack(fill="x", pady=(4, 12))
+    ttk.Label(integrity_tab, text="Expected SHA-256 (optional):").pack(anchor="w")
+    ttk.Entry(integrity_tab, textvariable=expected_digest).pack(fill="x")
+    ttk.Label(integrity_tab, textvariable=actual_digest, wraplength=780).pack(anchor="w", pady=12)
+    def hash_evidence():
+        if not evidence_path.get():
+            messagebox.showwarning("File required", "Choose a regular evidence file.")
+            return
+        hash_button.configure(state="disabled")
+        selected = evidence_path.get()
+        expected = expected_digest.get().strip()
+        def worker():
+            try:
+                actual = sha256_file(selected)
+                if expected:
+                    matches = verify_sha256(selected, expected)
+                    message = actual + ("  — MATCH" if matches else "  — MISMATCH")
+                else:
+                    message = actual
+            except (OSError, ValueError) as exc:
+                message = "Verification failed: " + str(exc)
+            root.after(0, lambda: (actual_digest.set(message), hash_button.configure(state="normal")))
+        threading.Thread(target=worker, daemon=True).start()
+    hash_button = ttk.Button(integrity_tab, text="Calculate / Verify SHA-256", command=hash_evidence)
+    hash_button.pack(anchor="w", pady=10)
     case_name = tk.StringVar()
     ttk.Label(cases_tab, text="LOCAL INVESTIGATIONS").pack(anchor="w")
     ttk.Label(cases_tab, text="Case metadata stays on this Mac; no evidence files are copied.").pack(anchor="w", pady=(4, 12))
