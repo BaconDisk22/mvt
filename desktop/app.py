@@ -8,11 +8,11 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 try:
     from desktop.cases import create_case, list_cases
     from desktop.history import list_scans, save_scan
-    from desktop.integrity import sha256_file, verify_sha256
+    from desktop.integrity import sha256_file
 except ModuleNotFoundError:
     from cases import create_case, list_cases
     from history import list_scans, save_scan
-    from integrity import sha256_file, verify_sha256
+    from integrity import sha256_file
 
 
 def scan_command(executable, backup, output):
@@ -95,7 +95,9 @@ def main():
             try:
                 actual = sha256_file(selected)
                 if expected:
-                    matches = verify_sha256(selected, expected)
+                    if len(expected) != 64 or any(c not in "0123456789abcdefABCDEF" for c in expected):
+                        raise ValueError("Expected a 64-character SHA-256 hexadecimal digest")
+                    matches = actual == expected.lower()
                     message = actual + ("  — MATCH" if matches else "  — MISMATCH")
                 else:
                     message = actual
