@@ -1,6 +1,9 @@
 name: Intel Mac desktop preview
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'feature/desktop-ci-safety'
   pull_request:
     paths:
       - 'desktop/**'
@@ -21,12 +24,19 @@ jobs:
           python -m pip install . "pyinstaller>=6,<7" pytest pytest-cov
       - name: Desktop worker smoke tests
         run: python -m pytest desktop/test_app.py desktop/test_cases.py desktop/test_integrity.py desktop/test_history.py -q
+      - name: Desktop syntax and import checks
+        run: |
+          python -m compileall -q desktop
+          python -c "import desktop.app, desktop.cases, desktop.history, desktop.integrity"
       - name: Build application
         run: |
           python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt --paths . --hidden-import desktop.cases --hidden-import desktop.history desktop/app.py
       - name: Packaged CLI smoke test
         run: |
           "dist/MVT Forensic Suite.app/Contents/MacOS/MVT Forensic Suite" --mvt-scan-worker --help
+      - name: Verify packaged desktop imports
+        run: |
+          python -c "from pathlib import Path; p=Path('dist/MVT Forensic Suite.app/Contents/MacOS/MVT Forensic Suite'); assert p.is_file()"
       - name: Package unsigned DMG
         run: |
           hdiutil create -volname "MVT Forensic Suite" -srcfolder "dist/MVT Forensic Suite.app" -ov -format UDZO MVT-Forensic-Suite-Intel.dmg
