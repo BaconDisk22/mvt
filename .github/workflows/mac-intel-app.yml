@@ -23,7 +23,7 @@ jobs:
         run: python -m pytest desktop/test_app.py desktop/test_cases.py desktop/test_integrity.py desktop/test_history.py -q
       - name: Build application
         run: |
-          python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt --paths . --hidden-import desktop.cases --hidden-import desktop.history desktop/app.py
+          python -m PyInstaller --windowed --onedir --name "MVT Forensic Suite" --collect-all mvt --paths . --hidden-import desktop.cases --hidden-import desktop.history --hidden-import desktop.integrity desktop/app.py
       - name: Packaged CLI smoke test
         run: |
           "dist/MVT Forensic Suite.app/Contents/MacOS/MVT Forensic Suite" --mvt-scan-worker --help
